@@ -1,0 +1,1 @@
+export { default } from "../api_lib/lib/submit-quiz.js";

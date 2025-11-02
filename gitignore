@@ -1,13 +1,8 @@
-# Ignore Node.js dependencies
 node_modules/
-
-# Ignore Parcel cache and build files
 .parcel-cache/
 parcel-cache/
 dist/
 .vercel/
-
-# Ignore system/temp files
 .DS_Store
 *.log
 *.zip
