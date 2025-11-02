@@ -1,0 +1,166 @@
+/* ===== Base ===== */
+:root{
+  --bg:#000;
+  --text:#fff;
+  --muted:#a5a9b4;
+  --panel:#141414;
+  --panelBorder:#242424;
+  --pill:#2b2b2b;
+  --pill2:#4a4a4a;
+  --pillHover:#3b3b3b;
+  --accent:#ffd800;
+  --accent-d:#f0c100;
+  --ok:#58d68d;
+}
+*{ box-sizing:border-box }
+html,body{ margin:0; padding:0; background:var(--bg); color:var(--text); font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+.muted{ color:var(--muted) }
+.row-center{ display:flex; gap:12px; justify-content:center; }
+
+/* ===== Buttons ===== */
+button{
+  border:0; border-radius:12px; font-weight:800; cursor:pointer;
+  transition:transform .15s ease, box-shadow .2s ease, background .2s ease, color .2s ease, opacity .2s ease;
+}
+.btn-primary{ background:var(--accent); color:#141414; padding:12px 22px; }
+.btn-primary:hover{ transform:translateY(-2px); box-shadow:0 10px 24px rgba(255,216,0,.35) }
+.btn-primary:disabled{ opacity:.45; cursor:not-allowed; transform:none; box-shadow:none; }
+.btn-ghost{ background:#2a2a2a; color:#fff; border:1px solid #353535; padding:10px 16px; }
+.btn-ghost:hover{ background:#333 }
+
+/* ===== Connect ===== */
+.connect-wrap{
+  text-align:center; padding:46px 18px 26px;
+  display:flex; flex-direction:column; align-items:center; gap:10px;
+}
+.brand{
+  max-width:620px; width:80%; height:auto; margin-bottom:18px;
+  filter: drop-shadow(0 0 8px rgba(255,255,0,.5));
+}
+
+/* ===== Step Quiz ===== */
+.step-wrap{ width:100%; max-width:860px; margin:0 auto; padding:12px 16px 28px; }
+.step-top{ display:flex; justify-content:center; }
+.progress{ width:100%; max-width:720px; position:relative; margin:10px auto 20px; }
+.progress-bar{
+  height:6px; width:0%; background:var(--accent); border-radius:999px; box-shadow:0 4px 14px rgba(255,216,0,.35);
+  transition: width .4s ease;
+}
+.progress-dots{ position:absolute; left:0; right:0; top:-12px; display:flex; justify-content:space-between; padding:0 4px; pointer-events:none; }
+.progress-dots .dot{
+  width:8px; height:8px; border-radius:999px; background:#3b3b3b; box-shadow:inset 0 0 0 2px #2a2a2a;
+  transition: background .3s ease, transform .3s ease;
+}
+.progress-dots .dot.active{ background:var(--accent); transform:scale(1.2); box-shadow:0 0 10px rgba(255,216,0,.5) }
+
+.step-title{
+  text-align:center; font-size:32px; font-weight:800; margin:22px 0 34px;
+  animation:fadeIn .5s ease both;
+}
+
+/* Pills row */
+.pill-row{ display:flex; justify-content:center; gap:28px; flex-wrap:wrap; }
+
+/* Pill buttons */
+.pill{
+  min-width:240px; padding:18px 32px; border-radius:9999px;
+  border:1px solid #2d2d2d; background:linear-gradient(120deg, var(--pill), var(--pill2));
+  color:#e7e7e7; font-size:18px; font-weight:700;
+  transition: background .25s ease, transform .2s ease, box-shadow .25s ease, border-color .25s ease;
+}
+.pill:hover{ transform:translateY(-4px); background:linear-gradient(120deg, var(--pillHover), #6d6d6d); box-shadow:0 6px 22px rgba(0,0,0,.35) }
+.pill.active{
+  background:linear-gradient(120deg, var(--accent), var(--accent-d)); color:#141414;
+  transform:translateY(-6px) scale(1.03); border-color:var(--accent);
+  box-shadow:0 10px 26px rgba(255,216,0,.45);
+}
+
+/* Step actions */
+.step-actions{ display:flex; justify-content:flex-end; max-width:860px; margin:28px auto 10px; }
+
+/* ✅ Privacy / Zama block */
+.privacy-block{
+  margin-top:18px;
+  padding:14px;
+  background:#0f1524;
+  border-radius:12px;
+  border:1px solid #23304d;
+}
+.checkbox-row{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  cursor:pointer;
+  font-size:14px;
+}
+.privacy-hint{
+  margin:5px 0 0;
+  font-size:13px;
+  color:#9fb0c4;
+}
+
+/* ===== Hub ===== */
+.hub-wrap{ width:94%; max-width:620px; margin:28px auto; }
+.profile-card{
+  background:var(--panel); border:1px solid var(--panelBorder); border-radius:14px; padding:14px 16px; margin:12px 0;
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  transition:transform .15s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.profile-card:hover{ transform:translateY(-3px); border-color:#5a5a5a; box-shadow:0 8px 22px rgba(0,0,0,.25) }
+.profile-id{ display:flex; align-items:center; gap:10px; }
+.avatar{ width:40px; height:40px; background:#555; border-radius:50% }
+
+/* ===== Result / Gauge ===== */
+.result-wrap{ width:92%; max-width:620px; margin:34px auto; text-align:center; }
+.duo{ display:flex; justify-content:center; align-items:center; gap:10px; margin-bottom:8px; }
+.avatar-small{ width:30px; height:30px; border-radius:50%; background:#555 }
+.gauge-container{ width:220px; height:220px; margin:18px auto; position:relative; border-radius:50%; background:#333; overflow:hidden; }
+#gaugeFill, .gauge-fill{
+  position:absolute; inset:0; border-radius:50%;
+  background-image: conic-gradient(var(--accent) var(--gauge-angle,0deg), #555 var(--gauge-angle,0deg));
+  transition: all .8s ease-out;
+}
+.gauge-cover{ position:absolute; inset:28px; border-radius:50%; background:#121212; display:flex; flex-direction:column; align-items:center; justify-content:center; box-shadow: inset 0 0 10px rgba(0,0,0,.5); }
+.score{ font-size:2.2em; font-weight:900; color:var(--accent) }
+
+/* ===== Chat ===== */
+.chat-wrap{
+  display:none; flex-direction:column; width:92%; max-width:820px; height:70vh;
+  margin:30px auto; border:1px solid #333; border-radius:12px; background:#1a1a1a; overflow:hidden;
+}
+.chat-header{ background:#2a2a2a; padding:10px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; }
+.chat-header h3{ color:var(--accent); margin:0; font-size:1.1em }
+.chat-history{ flex:1; padding:15px; overflow-y:auto; display:flex; flex-direction:column; gap:10px }
+.message{ max-width:72%; padding:8px 12px; border-radius:14px; line-height:1.45 }
+.message p{ margin:0; color:#fff }
+.message.sent{ background:var(--accent); color:#000; align-self:flex-end; border-bottom-right-radius:5px }
+.message.sent p{ color:#000 }
+.message.received{ background:#3a3a3a; color:#fff; align-self:flex-start; border-bottom-left-radius:5px }
+.chat-input-area{ display:flex; gap:10px; padding:10px; border-top:1px solid #333; background:#2a2a2a }
+#chatInput{ flex:1; padding:10px 14px; border:1px solid #444; border-radius:20px; background:#3a3a3a; color:#fff; outline:none }
+
+/* ===== Footer ===== */
+#footer{ width:100%; padding:40px 0 22px; text-align:center; }
+#footer p{ color:#777; margin:0; font-size:.9em }
+.social-links{ margin-top:8px }
+.social-links a{ color:var(--accent); text-decoration:none; margin:0 10px; font-size:.9em; font-weight:700 }
+.social-links a:hover{ text-decoration:underline; color:#fff352 }
+.social-text{ color:#777; font-size:.9em; margin-left:6px }
+
+/* ===== Animations ===== */
+.fade-in{ animation:fadeIn .45s ease both }
+.slide-in-right{ animation:slideRight .45s ease both }
+.slide-in-left{ animation:slideLeft .45s ease both }
+
+@keyframes fadeIn{ from{opacity:0} to{opacity:1} }
+@keyframes slideRight{ from{opacity:0; transform:translateX(-36px)} to{opacity:1; transform:translateX(0)} }
+@keyframes slideLeft{ from{opacity:0; transform:translateX(36px)} to{opacity:1; transform:translateX(0)} }
+
+/* ===== Responsive ===== */
+@media (max-width: 920px){
+  .pill{ min-width:200px; padding:16px 26px; font-size:17px }
+}
+@media (max-width: 560px){
+  .pill{ min-width:100%; }
+  .step-actions{ justify-content:center }
+}

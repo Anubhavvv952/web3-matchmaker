@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Admin Setup — Batch Mint Auto-Detect</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root { --bg:#0b0d10; --panel:#151a21; --text:#e8edf2; --muted:#9fb0c4; --accent:#f7b500; --ok:#1fd286; --err:#ff5577; }
+    *{box-sizing:border-box} html,body{margin:0;background:var(--bg);color:var(--text);font:15px/1.45 system-ui,Segoe UI,Roboto,Arial}
+    .wrap{max-width:980px;margin:34px auto;padding:0 16px}
+    .card{background:var(--panel);border:1px solid #222937;border-radius:16px;padding:22px;margin-bottom:18px}
+    h1{margin:0 0 10px;font-weight:800}
+    h2{margin:12px 0 6px;font-weight:800;font-size:18px}
+    p.sub{margin:0 0 14px;color:var(--muted)}
+    .row{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0 16px}
+    label{display:block;margin:8px 0 6px;color:var(--muted);font-size:13px}
+    input,select{width:100%;height:44px;border-radius:10px;border:1px solid #273042;background:#0e1217;color:#e8f0ff;padding:0 12px}
+    button{cursor:pointer;border:0;border-radius:12px;padding:10px 14px;font-weight:800}
+    .btn{background:#2a3241;color:#fff}.btn:hover{background:#364055}
+    .primary{background:var(--accent);color:#171308}.primary:hover{filter:brightness(1.05)}
+    .pill{display:inline-flex;gap:8px;background:#10151c;border:1px solid #273042;padding:6px 10px;border-radius:999px;color:#aab6ca;font-size:13px}
+    .status{white-space:pre-wrap;font-family:ui-monospace,Consolas,monospace;font-size:13px;background:#0e1217;border:1px solid #273042;border-radius:12px;padding:10px;min-height:120px}
+    .ok{color:var(--ok)} .err{color:var(--err)} .muted{color:var(--muted)}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+    code{background:#0e1217;border:1px solid #273042;padding:1px 6px;border-radius:8px}
+  </style>
+  <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="card">
+    <h1>Admin Setup — Batch Mint (Auto-Detect)</h1>
+    <p class="sub">Connect admin wallet on <b>Sepolia</b>. This page will auto-try the most common ERC-721 mint functions and send ETH if needed.</p>
+    <div class="row">
+      <button id="connectBtn" class="btn">Connect Wallet (Admin)</button>
+      <span class="pill">Chain: <span id="net">—</span></span>
+      <span class="pill">Wallet: <span id="addr">—</span></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Mint Settings</h2>
+    <div class="grid">
+      <div>
+        <label>Contract (Sepolia)</label>
+        <input id="contractAddr" value="0xFCd271B5AFc9e219B78bd221c6aC01CdB2bB47a2">
+      </div>
+      <div>
+        <label>Recipient (leave blank to use your wallet)</label>
+        <input id="to" placeholder="0x...">
+      </div>
+      <div>
+        <label>Quantity</label>
+        <input id="qty" type="number" value="10" min="1" step="1">
+      </div>
+      <div>
+        <label>ETH per mint (for payable mints, e.g. 0.01)</label>
+        <input id="ethPerMint" type="number" value="0" min="0" step="0.0001">
+      </div>
+      <div>
+        <label>Token ID base (only if function requires tokenId)</label>
+        <input id="tokenBase" type="number" value="0" min="0" step="1">
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:14px;gap:8px">
+      <button id="tryAll" class="btn primary">Try All (auto-detect)</button>
+      <button id="trySelected" class="btn">Try Selected Only</button>
+      <select id="fn">
+        <option value="safeMint(address)">safeMint(address)</option>
+        <option value="safeMint(address,uint256)">safeMint(address,uint256)</option>
+        <option value="mint(address)">mint(address)</option>
+        <option value="mint(address,uint256)">mint(address,uint256)</option>
+        <option value="mint(uint256)">mint(uint256)</option>
+        <option value="mint()">mint()</option>
+      </select>
+    </div>
+
+    <div id="log" class="status muted">Connect first, then click <b>Try All</b>. The page will test common mints and use the first one that works.</div>
+
+    <div style="margin-top:10px;color:#9fb0c4">
+      Tips:
+      <ul>
+        <li>If your contract is <code>onlyOwner</code> for mint, connect with the <b>deployer/owner</b> wallet.</li>
+        <li>If mint is <b>payable</b>, set <b>ETH per mint</b> (e.g., 0.01) before trying.</li>
+        <li>If mint requires <b>tokenId</b>, set a sensible <b>Token ID base</b>; it will mint IDs <code>base + i</code>.</li>
+        <li>If there’s a sale flag (e.g., <code>saleActive</code>/<code>paused</code>), make sure it’s enabled in your contract.</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  /* ===== CONFIG ===== */
+  const CHAIN_HEX = "0xaa36a7"; // Sepolia
+
+  /* ===== HELPERS ===== */
+  const $ = (id) => document.getElementById(id);
+  const set = (id,v) => { const e=$(id); if(e) e.textContent = v; };
+  const L = (m, cls="muted") => { const e=$('log'); if(e){ e.className='status '+cls; e.textContent=m; } };
+  function fmt(e){ return (e?.reason || e?.data?.message || e?.message || String(e)); }
+
+  async function ensureSepolia() {
+    const cur = await ethereum.request({ method:'eth_chainId' });
+    if (cur.toLowerCase() !== CHAIN_HEX) {
+      try {
+        await ethereum.request({ method:'wallet_switchEthereumChain', params:[{ chainId: CHAIN_HEX }] });
+      } catch (e) {
+        if (e.code === 4902) {
+          await ethereum.request({
+            method:'wallet_addEthereumChain',
+            params:[{
+              chainId: CHAIN_HEX, chainName:'Sepolia',
+              nativeCurrency:{ name:'SepoliaETH', symbol:'ETH', decimals: 18 },
+              rpcUrls:['https://11155111.rpc.thirdweb.com'],
+              blockExplorerUrls:['https://sepolia.etherscan.io']
+            }]
+          });
+        } else { throw e; }
+      }
+    }
+  }
+
+  $('connectBtn').onclick = async () => {
+    try{
+      if(!window.ethereum) throw new Error("MetaMask not found.");
+      await ethereum.request({ method:'eth_requestAccounts' });
+      await ensureSepolia();
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const signer   = provider.getSigner();
+      const addr     = await signer.getAddress();
+      const net      = await provider.getNetwork();
+      set('addr', addr.slice(0,6)+'…'+addr.slice(-4));
+      set('net',  net.name+' (#'+net.chainId+')');
+      L('✓ Connected. Set options, then click Try All.', 'ok');
+    }catch(e){ L('✗ Connect error: '+fmt(e), 'err'); }
+  };
+
+  // Build a contract instance that includes all candidate mint signatures
+  function buildContract(signer, address) {
+    const abi = [
+      "function safeMint(address to) external",
+      "function safeMint(address to,uint256 tokenId) external",
+      "function mint(address to) external",
+      "function mint(address to,uint256 tokenId) external",
+      "function mint(uint256 quantity) external",
+      "function mint() external"
+    ];
+    return new ethers.Contract(address, abi, signer);
+  }
+
+  // Try a single signature with given parameters + optional value
+  async function trySig(c, sig, params, valueWei) {
+    const overrides = valueWei && !valueWei.isZero() ? { value: valueWei } : {};
+    if (sig === "safeMint(address)")                return c["safeMint(address)"](...params, overrides);
+    if (sig === "safeMint(address,uint256)")        return c["safeMint(address,uint256)"](...params, overrides);
+    if (sig === "mint(address)")                    return c["mint(address)"](...params, overrides);
+    if (sig === "mint(address,uint256)")            return c["mint(address,uint256)"](...params, overrides);
+    if (sig === "mint(uint256)")                    return c["mint(uint256)"](...params, overrides);
+    if (sig === "mint()")                           return c["mint()"](...params, overrides);
+    throw new Error("Unknown sig");
+  }
+
+  // Prepare params for a signature (loops or single)
+  async function runAutoMint(sig, qty, to, tokenBase, valueWei, c) {
+    // 1-tx variants
+    if (sig === "mint(uint256)") {
+      const tx = await trySig(c, sig, [qty], valueWei); await tx.wait(); return {ok:true, tx};
+    }
+    if (sig === "mint()") {
+      for (let i=0;i<qty;i++){ const tx = await trySig(c, sig, [], valueWei); await tx.wait(); }
+      return {ok:true};
+    }
+    if (sig === "safeMint(address)") {
+      for (let i=0;i<qty;i++){ const tx = await trySig(c, sig, [to], valueWei); await tx.wait(); }
+      return {ok:true};
+    }
+    if (sig === "mint(address)") {
+      for (let i=0;i<qty;i++){ const tx = await trySig(c, sig, [to], valueWei); await tx.wait(); }
+      return {ok:true};
+    }
+    if (sig === "safeMint(address,uint256)") {
+      const base = tokenBase || Math.floor(Date.now()/1000);
+      for (let i=0;i<qty;i++){ const tx = await trySig(c, sig, [to, base+i], valueWei); await tx.wait(); }
+      return {ok:true};
+    }
+    if (sig === "mint(address,uint256)") {
+      const base = tokenBase || Math.floor(Date.now()/1000);
+      for (let i=0;i<qty;i++){ const tx = await trySig(c, sig, [to, base+i], valueWei); await tx.wait(); }
+      return {ok:true};
+    }
+    return {ok:false, err:"Unsupported"};
+  }
+
+  async function doMint(selectedOnly=false){
+    try{
+      if(!window.ethereum) throw new Error("Wallet not connected.");
+      const provider   = new ethers.providers.Web3Provider(window.ethereum);
+      const signer     = provider.getSigner();
+      const me         = await signer.getAddress();
+
+      const address    = ($('contractAddr').value||'').trim();
+      if (!address)    throw new Error("Contract address required.");
+      const to         = (($('to').value||'').trim() || me);
+      const qty        = Math.max(1, parseInt(($('qty').value||'1'),10));
+      const tokenBase  = parseInt(($('tokenBase').value||'0'),10);
+      const ethPerMint = (($('ethPerMint').value||'0')+'').trim();
+      const valueWei   = ethers.utils.parseEther(ethPerMint === '' ? '0' : ethPerMint);
+
+      const c = buildContract(signer, address);
+
+      const candidates = selectedOnly
+        ? [ $('fn').value ]
+        : [
+            "mint(uint256)",
+            "mint()",
+            "safeMint(address)",
+            "mint(address)",
+            "safeMint(address,uint256)",
+            "mint(address,uint256)"
+          ];
+
+      L("Trying signatures:\n- " + candidates.join("\n- ") + "\n\nSending value per mint: " + ethPerMint + " ETH", "muted");
+
+      for (const sig of candidates){
+        try{
+          L("Trying "+sig+" …", "muted");
+          const res = await runAutoMint(sig, qty, to, tokenBase, valueWei, c);
+          if (res.ok){
+            L("✓ Minted successfully via "+sig, "ok");
+            return;
+          }
+        }catch(e){
+          console.warn(sig, e);
+          L("✗ "+sig+" reverted: " + fmt(e), "err");
+        }
+      }
+
+      L("All candidate signatures reverted. Likely causes:\n• Wrong function signature\n• onlyOwner / role required\n• Sale not active / paused\n• Payable price required (set ETH per mint)\n• Supply cap / per-wallet limit\nIf you can share the exact mint function from your contract, I can hard-wire it.", "muted");
+    }catch(e){
+      L("✗ Error: "+fmt(e), "err");
+    }
+  }
+
+  $('tryAll').onclick      = () => doMint(false);
+  $('trySelected').onclick = () => doMint(true);
+
+  console.log("batch mint auto-detect loaded");
+});
+</script>
+</body>
+</html>

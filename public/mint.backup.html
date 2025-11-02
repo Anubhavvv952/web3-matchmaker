@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Membership Pass — Public Mint</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <style>
+    :root{--bg:#0b0f1a;--panel:#131a2a;--text:#e6e6e6;--muted:#9fb0c4;--ok:#29d17c;--err:#ff6b6b;--btn:#f7d154}
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 system-ui,Segoe UI,Roboto,Arial}
+    .wrap{max-width:960px;margin:36px auto;padding:0 16px}
+    .card{background:var(--panel);border:1px solid #22304d;border-radius:14px;padding:20px}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+    input[type=text]{width:480px;max-width:100%;height:42px;border-radius:10px;border:1px solid #2a3a5e;background:#0f1524;color:#cfe0ff;padding:0 12px}
+    button{background:var(--btn);color:#111;border:0;border-radius:10px;padding:10px 14px;font-weight:800;cursor:pointer}
+    button.secondary{background:#2a3a5e;color:#e6e6e6}
+    .pill{padding:6px 10px;border-radius:999px;background:#0f1524;border:1px solid #2a3a5e;color:#cfe0ff;font-size:13px;margin-right:6px}
+    .status{margin-top:8px;font-weight:800}
+    .ok{color:var(--ok)} .err{color:var(--err)}
+    .log{height:320px;width:100%;background:#0f1524;border:1px solid #2a3a5e;color:#bcd1ff;border-radius:10px;padding:10px;white-space:pre;overflow:auto}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Membership Pass — Public Mint</h1>
+    <div class="row">
+      <input id="addr" type="text" placeholder="0x… contract address" />
+      <button id="save" class="secondary">Save Address</button>
+      <button id="connect">Connect Wallet</button>
+      <button id="mint">Mint 1 NFT</button>
+    </div>
+    <div class="row">
+      <span class="pill" id="net">Network: —</span>
+      <span class="pill" id="who">Wallet: —</span>
+      <span class="pill" id="mode">Mode: public mint (mintBatch)</span>
+    </div>
+    <div class="row">
+      <span class="pill" id="sale">Sale: —</span>
+      <span class="pill" id="price">Price(wei): —</span>
+    </div>
+    <div class="log" id="log"></div>
+    <div class="status" id="status"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Read ?contract=… from URL (nice shareable link)
+  const qs = new URLSearchParams(location.search);
+  const urlContract = (qs.get("contract")||"").trim();
+  if (urlContract) localStorage.setItem("MP_ADDR", urlContract);
+
+  // Persisted address (you can still edit the input)
+  const saved = localStorage.getItem("MP_ADDR");
+  if (saved) document.getElementById("addr").value = saved;
+
+  const $ = (id)=>document.getElementById(id);
+  const log = (s)=>{ const el=$('log'); el.textContent += `[${new Date().toLocaleTimeString()}] ${s}\n`; el.scrollTop = el.scrollHeight; };
+  const setStatus = (msg, ok)=>{ const el=$('status'); el.textContent=msg; el.className='status ' + (ok?'ok':'err'); };
+
+  $('save').onclick = ()=>{
+    const v = $('addr').value.trim();
+    if (!/^0x[a-fA-F0-9]{40}$/.test(v)) { alert('Enter a valid 0x address'); return; }
+    localStorage.setItem('MP_ADDR', v);
+    log('Address saved: ' + v);
+  };
+
+  // Minimal ABI for public mint contracts that use mintBatch(to, amount)
+  // Optional reads (if present) are probed in try/catch.
+  const ABI = [
+    "function mintBatch(address to, uint256 amount) payable",
+    "function saleActive() view returns (bool)",
+    "function price() view returns (uint256)"
+  ];
+
+  // Some variants use mintTo(address,uint256) — we’ll try that fallback if mintBatch isn’t found.
+  const ABI_FALLBACK = [
+    "function mintTo(address to, uint256 amount) payable"
+  ];
+
+  let provider, signer, contract, contractFallback;
+
+  async function connect(){
+    try{
+      if(!window.ethereum){ setStatus("No wallet found", false); return; }
+      await ethereum.request({ method: 'eth_requestAccounts' });
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      signer = provider.getSigner();
+
+      const net = await provider.getNetwork();
+      $('net').textContent = `Network: ${net.name} (${net.chainId})`;
+      $('who').textContent = `Wallet: ${await signer.getAddress()}`;
+
+      const addr = ($('addr').value||"").trim();
+      if (!/^0x[a-fA-F0-9]{40}$/.test(addr)) { setStatus("Invalid address format.", false); return; }
+
+      const code = await provider.getCode(addr);
+      if (!code || code === "0x") { setStatus("No contract code at this address (wrong network or EOA).", false); return; }
+
+      contract = new ethers.Contract(addr, ABI, signer);
+      contractFallback = new ethers.Contract(addr, ABI_FALLBACK, signer);
+
+      // Probe reads if they exist (ignore if not present)
+      try {
+        const sale = await contract.saleActive();
+        $('sale').textContent = `Sale: ${sale ? 'active' : 'inactive'}`;
+      } catch(_) { $('sale').textContent = 'Sale: —'; }
+
+      try {
+        const p = await contract.price();
+        $('price').textContent = `Price(wei): ${p.toString()}`;
+      } catch(_) { $('price').textContent = 'Price(wei): —'; }
+
+      $('mode').textContent = 'Mode: public mint (mintBatch)';
+      log("Connected. Bytecode found. Ready to mint with mintBatch(to,1).");
+      setStatus("Ready.", true);
+    }catch(e){
+      const msg = e?.reason || e?.message || String(e);
+      log("Connect failed: " + msg);
+      setStatus("Connect failed. See log.", false);
+    }
+  }
+
+  async function doMint(){
+    try{
+      if(!provider || !signer || !contract){
+        setStatus("Connect wallet first.", false); return;
+      }
+      const me = await signer.getAddress();
+
+      // If contract has price(), pay it; else default 0
+      let value = ethers.constants.Zero;
+      try { value = await contract.price(); } catch(_) {}
+
+      log("Submitting tx: mintBatch(" + me + ", 1) …");
+      // Try mintBatch first
+      try{
+        // dry-run for clearer reverts
+        try { await contract.callStatic.mintBatch(me, 1, { value }); } catch(_) {}
+        const tx = await contract.mintBatch(me, 1, { value });
+        log("tx: " + tx.hash);
+        const rcpt = await tx.wait();
+        log("✅ Mint confirmed in block " + rcpt.blockNumber);
+        setStatus("Mint success (mintBatch).", true);
+        return;
+      }catch(e1){
+        // fallback to mintTo if ABI differs
+        log("mintBatch not available or reverted; trying mintTo(to,1) …");
+        const tx = await contractFallback.mintTo(me, 1, { value });
+        log("tx: " + tx.hash);
+        const rcpt = await tx.wait();
+        log("✅ Mint confirmed in block " + rcpt.blockNumber);
+        setStatus("Mint success (mintTo).", true);
+        return;
+      }
+    }catch(e){
+      const msg = e?.error?.message || e?.reason || e?.message || String(e);
+      log("❌ Mint failed: " + msg);
+      if (/inactive|Sale inactive/i.test(msg)) setStatus("Sale OFF — owner must enable it.", false);
+      else if (/insufficient funds/i.test(msg)) setStatus("Not enough ETH for gas/price.", false);
+      else setStatus("Mint failed. See log.", false);
+    }
+  }
+
+  $('connect').onclick = connect;
+  $('mint').onclick    = doMint;
+})();
+</script>
+</body>
+</html>

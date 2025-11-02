@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Matches — Web3 Matchmaker</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card: #111827;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #22d3ee;
+      --good: #22c55e;
+      --mid:  #eab308;
+      --bad:  #ef4444;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Inter, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+    }
+    header {
+      padding: 16px 20px;
+      border-bottom: 1px solid #1f2937;
+      display: flex; align-items: center; gap: 12px;
+    }
+    h1 { font-size: 20px; margin: 0; }
+    main {
+      display: grid; grid-template-columns: 1.6fr 1fr; gap: 18px;
+      padding: 18px; max-width: 1100px; margin: 0 auto;
+    }
+    .panel {
+      background: var(--card);
+      border: 1px solid #1f2937; border-radius: 12px;
+      padding: 14px;
+    }
+    .row { display: flex; align-items: center; justify-content: space-between; }
+    .muted { color: var(--muted); }
+    .match-list { display: grid; gap: 12px; margin-top: 10px; }
+    .match-card {
+      padding: 14px; border-radius: 10px; background: #0f172a; border: 1px solid #1f2937;
+      display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: center;
+    }
+    .match-card .who { font-weight: 600; }
+    .score {
+      min-width: 88px; text-align: right; font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+    .score.good { color: var(--good); }
+    .score.mid  { color: var(--mid) ; }
+    .score.bad  { color: var(--bad) ; }
+    .logs {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: 12px; line-height: 1.45;
+      height: 420px; overflow: auto; padding: 10px;
+      background: #0a0f1f; border-radius: 8px; border: 1px solid #1f2937;
+      white-space: pre-wrap;
+    }
+    button {
+      background: #0ea5e9; border: none; color: white; padding: 8px 12px;
+      border-radius: 8px; cursor: pointer; font-weight: 600;
+    }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    .bar { display: flex; gap: 10px; align-items: center; }
+    input[type=text] {
+      background: #0b1226; border: 1px solid #1f2b44; color: var(--text);
+      border-radius: 8px; padding: 8px 10px; min-width: 320px;
+    }
+    .pill { padding: 4px 8px; border-radius: 999px; background: #0b1226; border: 1px solid #1f2937; font-size: 12px; color: var(--muted); }
+    .tiny { font-size: 12px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Matches</h1>
+    <span class="pill">Zama FHE (simulated) &amp; drop backend</span>
+  </header>
+
+  <main>
+    <!-- Left: matches -->
+    <section class="panel">
+      <div class="row">
+        <div>
+          <div class="muted tiny">Your wallet</div>
+          <div id="me" class="tiny">Not connected</div>
+        </div>
+        <div class="bar">
+          <input id="wallet" type="text" placeholder="Paste your wallet (0x...)" />
+          <button id="btnLoad">Load Matches</button>
+        </div>
+      </div>
+
+      <div class="match-list" id="matchList"></div>
+    </section>
+
+    <!-- Right: logs -->
+    <section class="panel">
+      <div class="row" style="margin-bottom:8px;">
+        <div>Live Logs</div>
+        <button id="btnClear" class="tiny">Clear</button>
+      </div>
+      <div id="logs" class="logs"></div>
+    </section>
+  </main>
+
+  <script src="/log-panel.js"></script>
+  <script src="/matches.js"></script>
+</body>
+</html>

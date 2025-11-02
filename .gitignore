@@ -1,0 +1,9 @@
+# Ignore Node deps & build artifacts
+node_modules/
+.parcel-cache/
+parcel-cache/
+dist/
+.vercel/
+.DS_Store
+*.zip
+*.tgz

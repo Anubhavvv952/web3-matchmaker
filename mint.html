@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Membership Pass — Mint</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <style>
+    :root { --bg:#0b0f1a; --card:#131a2a; --text:#e6e6e6; --muted:#9fb0c4; --ok:#2ecc71; --err:#ff6b6b; --btn:#f7d154; }
+    html,body { margin:0; background:var(--bg); color:var(--text); font: 16px system-ui, sans-serif; }
+    .wrap { max-width: 900px; margin: 40px auto; padding: 0 16px; }
+    .card { background: var(--card); padding: 24px; border-radius: 14px; border: 1px solid #22304d; }
+    h1 { margin-top: 0; } p { color: var(--muted); }
+    .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    button { background: var(--btn); color:#111; border:0; border-radius:10px; padding: 10px 15px; font-weight:800; cursor:pointer; }
+    input[type=text]{ width:380px; max-width:100%; height:40px; border-radius:10px; border:1px solid #2a3a5e; background:#0f1524; color:#fff; padding:0 10px; }
+    textarea { width:100%; height:200px; background:#0f1524; color:#cfd7ff; border-radius:10px; border:1px solid #2a3a5e; padding:12px; font-family:monospace; }
+    .pill { padding:6px 10px; border-radius:999px; background:#0f1524; border:1px solid #2a3a5e; }
+    .ok { color:var(--ok); font-weight:700; }
+    .err { color:var(--err); font-weight:700; }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <script defer src="./mint.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+
+      <h1>Membership Pass — Claim</h1>
+      <p>Sepolia testnet · public mint</p>
+
+      <!-- ✅ ADDRESS FIELD IS HERE -->
+      <div class="row" style="margin-bottom:10px">
+        <input id="addrInput" type="text" placeholder="Paste contract address (0x...)" />
+        <button id="saveAddrBtn">Save Address</button>
+        <button id="connectBtn">Connect Wallet</button>
+        <button id="mintBtn" disabled>Mint 1 NFT</button>
+      </div>
+
+      <div class="row" style="gap:8px">
+        <span class="pill">Network: <code id="netName">—</code></span>
+        <span class="pill">Wallet: <code id="user">—</code></span>
+        <span class="pill">Mode: <code id="mode">—</code></span>
+      </div>
+
+      <div id="flash"></div>
+      <textarea id="log" readonly></textarea>
+
+    </div>
+  </div>
+</body>
+</html>

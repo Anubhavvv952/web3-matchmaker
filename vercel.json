@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "functions": {
+    "api/**/*.{js,ts}": { "runtime": "nodejs20.x" }
+  },
+  "routes": [
+    { "src": "^/api/(.*)$", "dest": "/api/$1" },
+    {
+      "src": "^/mint/?$",
+      "status": 308,
+      "headers": {
+        "Location": "https://thirdweb.com/sepolia/0xFCd271B5AFc9e219B78bd221c6aC01CdB2bB47a2"
+      }
+    }
+  ]
+}

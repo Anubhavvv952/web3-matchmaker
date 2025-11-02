@@ -1,0 +1,1 @@
+Couldn't find the requested file /dist/browser.umd.js in @thirdweb-dev/sdk.

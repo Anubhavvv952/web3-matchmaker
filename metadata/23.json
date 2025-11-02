@@ -1,0 +1,11 @@
+{
+  "name": "Web3 Matchmaker Pass #23",
+  "description": "Exclusive membership NFT for the ZAMA Web3 Matchmaker.",
+  "image": "ipfs://bafybeihbxtmhxp7legvfgfj2pr632vyz6rg3cim6zicodautxhdxkww5mq/23.png",
+  "attributes": [
+    {
+      "trait_type": "Access Level",
+      "value": "Member"
+    }
+  ]
+}

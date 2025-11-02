@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Web3 Matchmaker</title>
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="avatar-placeholder.png">
+
+  <!-- Inter font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- Ethers v5 UMD -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+
+  <style>
+    .privacy-block {
+      margin-top: 18px; padding: 14px; background: #0f1524;
+      border-radius: 12px; border: 1px solid #23304d;
+    }
+    .checkbox-row { display: flex; gap: 10px; align-items: center; cursor: pointer; font-size: 14px; }
+    .privacy-hint { margin-top: 5px; font-size: 13px; color: #9fb0c4; }
+    .mint-link-wrap { margin-top: 10px; display: flex; justify-content: center; }
+  </style>
+
+  <!-- 🔒 DEMO SHIM #1 (runs BEFORE your app): intercept any /api/submit-quiz -->
+  <script>
+    (function () {
+      const origFetch = window.fetch;
+      window.fetch = function(input, init) {
+        const url = typeof input === "string" ? input : (input && input.url) || "";
+        if (url.includes("/api/submit-quiz")) {
+          console.log("✅ Demo shim: blocked backend upload →", url);
+          const body = JSON.stringify({ ok: true });
+          return Promise.resolve(new Response(body, {
+            status: 200,
+            headers: { "Content-Type": "application/json" }
+          }));
+        }
+        return origFetch.apply(this, arguments);
+      };
+    })();
+  </script>
+</head>
+<body>
+
+  <!-- ================= CONNECT / MINT ================= -->
+  <header id="connectionArea" class="connect-wrap">
+    <img src="vectorhandshake.png" alt="Web3 Matchmaker Logo" class="brand"/>
+    <h1>Web3 Matchmaker</h1>
+    <p class="muted">Find Your Tribe, Privately.</p>
+
+    <button id="connectButton" class="btn-primary">Connect Wallet</button>
+
+    <!-- ✅ Working Thirdweb Mint link -->
+    <div class="mint-link-wrap">
+      <button
+        onclick="location.href='https://thirdweb.com/sepolia/0xFCd271B5AFc9e219B78bd221c6aC01CdB2bB47a2'"
+        class="btn-ghost">
+        Mint Membership Pass
+      </button>
+    </div>
+
+    <p id="statusMessage" class="muted"></p>
+  </header>
+
+  <!-- ================= QUIZ ================= -->
+  <main id="stepQuizArea" class="step-wrap" style="display:none;">
+    <div class="step-top">
+      <div class="progress">
+        <div id="progressBar" class="progress-bar"></div>
+        <div id="progressDots" class="progress-dots"></div>
+      </div>
+    </div>
+
+    <h2 class="step-title"><span id="stepQuestion">Loading…</span></h2>
+    <div id="stepOptions" class="pill-row"></div>
+
+    <div class="privacy-block">
+      <label class="checkbox-row">
+        <input type="checkbox" id="openToRemote">
+        <span>🔒 Open to remote collaboration (private via Zama FHE)</span>
+      </label>
+      <p class="privacy-hint">
+        ✔ Fully Homomorphic Encryption (FHE)<br>
+        ✔ Your answers remain private — only compatibility % is compared
+      </p>
+    </div>
+
+    <div class="step-actions">
+      <button id="stepNext" class="btn-primary" disabled>Next</button>
+    </div>
+
+    <p id="stepHint" class="muted">Select an option to continue.</p>
+  </main>
+
+  <!-- ================= HUB ================= -->
+  <section id="hubArea" style="display:none;" class="hub-wrap">
+    <h2>Community Hub</h2>
+
+    <div class="profile-card">
+      <div class="profile-id">
+        <img src="avatar-placeholder.png" class="avatar" alt="Avatar">
+        <span>Alice.eth</span>
+      </div>
+      <button class="compatibilityButton btn-ghost" data-target="Alice.eth">Check Compatibility</button>
+    </div>
+
+    <div class="profile-card">
+      <div class="profile-id">
+        <img src="avatar-placeholder.png" class="avatar" alt="Avatar">
+        <span>Bob.xyz</span>
+      </div>
+      <button class="compatibilityButton btn-ghost" data-target="Bob.xyz">Check Compatibility</button>
+    </div>
+
+    <div class="profile-card">
+      <div class="profile-id">
+        <img src="avatar-placeholder.png" class="avatar" alt="Avatar">
+        <span>Charlie.eth</span>
+      </div>
+      <button class="compatibilityButton btn-ghost" data-target="Charlie.eth">Check Compatibility</button>
+    </div>
+  </section>
+
+  <!-- ================= RESULT ================= -->
+  <section id="resultArea" style="display:none;" class="result-wrap">
+    <h2>Compatibility Result</h2>
+
+    <div class="duo">
+      <img src="avatar-placeholder.png" class="avatar-small" alt="you">
+      <span>&amp;</span>
+      <img src="avatar-placeholder.png" class="avatar-small" alt="them">
+    </div>
+
+    <p id="resultUsernames" class="muted">You & …</p>
+
+    <div class="gauge-container">
+      <div class="gauge-fill" id="gaugeFill"></div>
+      <div class="gauge-cover">
+        <span id="scoreDisplay" class="score">--%</span>
+        <p class="muted">Match Score</p>
+      </div>
+    </div>
+
+    <div class="row-center">
+      <button id="chatNowButton" class="btn-primary">Chat Now</button>
+      <button id="backToHubButton" class="btn-ghost">Back to Hub</button>
+    </div>
+  </section>
+
+  <!-- ================= CHAT ================= -->
+  <section id="chatArea" style="display:none;" class="chat-wrap">
+    <div class="chat-header">
+      <h3 id="chatPartnerName">Chatting with …</h3>
+      <button id="backToHubFromChatButton" class="btn-ghost">Back to Hub</button>
+    </div>
+
+    <div id="chatHistory" class="chat-history">
+      <div class="message received"><p>Hi there! Saw we matched</p></div>
+    </div>
+
+    <div class="chat-input-area">
+      <input id="chatInput" placeholder="Type your message…">
+      <button id="sendMessageButton" class="btn-primary">Send</button>
+    </div>
+  </section>
+
+  <!-- ================= FOOTER ================= -->
+  <footer id="footer">
+    <p>Created by Anubhav</p>
+    <div class="social-links">
+      <a href="https://x.com/Xalty87562" target="_blank">X (Twitter)</a>
+      <span class="social-text">Discord: anubhav4861</span>
+    </div>
+  </footer>
+
+  <!-- Your app script (cache-busted) -->
+  <script src="script.js?v=demo7"></script>
+
+  <!-- 🔒 DEMO SHIM #2 (runs AFTER your app): force override any function -->
+  <script>
+    // Ensure any in-app function cannot hit backend
+    window.submitQuizToBackend = async function () {
+      console.log("✅ Demo override: submitQuizToBackend() disabled — proceeding without upload.");
+      return true;
+    };
+  </script>
+</body>
+</html>
